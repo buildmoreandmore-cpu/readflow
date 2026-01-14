@@ -4,6 +4,39 @@ import { AppConfig, FontType, ThemeType } from '../types';
 import { gemini } from '../services/geminiService';
 import { extractTextFromFile } from '../lib/fileExtractor';
 
+// Tooltip component
+const Tooltip: React.FC<{ text: string; isDark: boolean }> = ({ text, isDark }) => {
+  const [show, setShow] = useState(false);
+
+  return (
+    <span className="relative inline-flex items-center ml-1">
+      <button
+        type="button"
+        className={`w-4 h-4 rounded-full text-[10px] font-medium flex items-center justify-center transition-colors ${
+          isDark
+            ? 'bg-zinc-700 text-zinc-400 hover:bg-zinc-600 hover:text-zinc-200'
+            : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300 hover:text-zinc-700'
+        }`}
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        onClick={() => setShow(!show)}
+      >
+        ?
+      </button>
+      {show && (
+        <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 rounded-lg text-xs w-48 text-center z-50 shadow-lg ${
+          isDark ? 'bg-zinc-800 text-zinc-200' : 'bg-white text-zinc-700 border border-zinc-200'
+        }`}>
+          {text}
+          <div className={`absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent ${
+            isDark ? 'border-t-zinc-800' : 'border-t-white'
+          }`} />
+        </div>
+      )}
+    </span>
+  );
+};
+
 interface InputModeProps {
   onStart: (text: string) => void;
   config: AppConfig;
@@ -127,11 +160,14 @@ const InputMode: React.FC<InputModeProps> = ({ onStart, config, setConfig }) => 
           <div className="space-y-6">
             <div>
               <div className="flex justify-between mb-2">
-                <span className="text-sm opacity-60">Speed</span>
+                <span className="text-sm opacity-60 flex items-center">
+                  Speed
+                  <Tooltip text="Words per minute. Start at 250, increase as comprehension holds." isDark={isDark} />
+                </span>
                 <span className="text-sm font-mono text-amber-500 font-bold">{config.wpm} WPM</span>
               </div>
-              <input 
-                type="range" min="100" max="1000" step="25" 
+              <input
+                type="range" min="100" max="1000" step="25"
                 value={config.wpm}
                 onChange={(e) => setConfig({...config, wpm: parseInt(e.target.value)})}
                 className="w-full accent-amber-500"
@@ -140,10 +176,13 @@ const InputMode: React.FC<InputModeProps> = ({ onStart, config, setConfig }) => 
 
             <div className="flex gap-4">
               <div className="flex-1">
-                <span className="text-sm opacity-60 block mb-2">Chunk Method</span>
-                <button 
+                <span className="text-sm opacity-60 mb-2 flex items-center">
+                  Chunk Method
+                  <Tooltip text="Groups words by meaning (2-6 words). How skilled readers naturally process text." isDark={isDark} />
+                </span>
+                <button
                   onClick={() => setConfig({...config, semanticChunking: !config.semanticChunking})}
-                  className={`w-full p-2 rounded-lg text-sm transition-all ${config.semanticChunking ? 'bg-amber-500 text-black font-bold' : isDark ? 'bg-zinc-800 opacity-60' : 'bg-zinc-100 opacity-60'}`}
+                  className={`w-full p-2 rounded-lg text-sm transition-all mt-2 ${config.semanticChunking ? 'bg-amber-500 text-black font-bold' : isDark ? 'bg-zinc-800 opacity-60' : 'bg-zinc-100 opacity-60'}`}
                 >
                   {config.semanticChunking ? 'Semantic' : 'Fixed Size'}
                 </button>
@@ -151,7 +190,7 @@ const InputMode: React.FC<InputModeProps> = ({ onStart, config, setConfig }) => 
               {!config.semanticChunking && (
                 <div className="flex-1">
                   <span className="text-sm opacity-60 block mb-2">Chunk Size</span>
-                  <select 
+                  <select
                     value={config.chunkSize}
                     onChange={(e) => setConfig({...config, chunkSize: parseInt(e.target.value)})}
                     className={`w-full p-2 rounded-lg ${isDark ? 'bg-zinc-800' : 'bg-zinc-100'} outline-none`}
@@ -163,11 +202,11 @@ const InputMode: React.FC<InputModeProps> = ({ onStart, config, setConfig }) => 
             </div>
 
             <div className="flex items-center justify-between">
-              <div className="flex flex-col">
-                <span className="text-sm font-medium">Bionic Mode</span>
-                <span className="text-[10px] opacity-40 uppercase tracking-tighter">Accessibility Assist</span>
-              </div>
-              <button 
+              <span className="text-sm font-medium flex items-center">
+                Bionic Mode
+                <Tooltip text="Bolds first syllables to anchor your eyes. Helps with ADHD, dyslexia, or fatigue." isDark={isDark} />
+              </span>
+              <button
                 onClick={() => setConfig({...config, bionicMode: !config.bionicMode})}
                 className={`w-12 h-6 rounded-full transition-all relative ${config.bionicMode ? 'bg-amber-500' : 'bg-zinc-700'}`}
               >
