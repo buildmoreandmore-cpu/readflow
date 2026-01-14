@@ -51,36 +51,36 @@ const InputMode: React.FC<InputModeProps> = ({ onStart, config, setConfig }) => 
   const isDark = config.theme === ThemeType.DARK;
 
   return (
-    <div className={`max-w-4xl mx-auto px-6 py-12 md:py-24 ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-      <header className="mb-12 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-3">FlowState</h1>
-        <p className="text-lg opacity-60">Train your focus. Master the art of speed reading.</p>
+    <div className={`max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-24 ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
+      <header className="mb-8 sm:mb-12 text-center">
+        <img src="/logo.png" alt="Lumen" className="h-12 sm:h-14 md:h-16 w-auto mx-auto mb-3" />
+        <p className="text-sm sm:text-base md:text-lg opacity-60">Train your focus. Master the art of speed reading.</p>
       </header>
 
       <div className={`rounded-2xl border ${isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-white border-zinc-200'} shadow-2xl overflow-hidden`}>
         {/* Tabs */}
         <div className={`flex border-b ${isDark ? 'border-zinc-800' : 'border-zinc-200'}`}>
-          <button 
+          <button
             onClick={() => setActiveTab('paste')}
-            className={`flex-1 py-4 font-medium transition-colors ${activeTab === 'paste' ? 'text-amber-500' : 'opacity-50 hover:opacity-80'}`}
+            className={`flex-1 py-3 sm:py-4 text-sm sm:text-base font-medium transition-colors ${activeTab === 'paste' ? 'text-amber-500' : 'opacity-50 hover:opacity-80'}`}
           >
             Paste Text
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('url')}
-            className={`flex-1 py-4 font-medium transition-colors ${activeTab === 'url' ? 'text-amber-500' : 'opacity-50 hover:opacity-80'}`}
+            className={`flex-1 py-3 sm:py-4 text-sm sm:text-base font-medium transition-colors ${activeTab === 'url' ? 'text-amber-500' : 'opacity-50 hover:opacity-80'}`}
           >
             URL Fetch
           </button>
         </div>
 
-        <div className="p-6">
-          <div className="mb-6 relative">
+        <div className="p-4 sm:p-6">
+          <div className="mb-4 sm:mb-6 relative">
             <textarea
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder={activeTab === 'paste' ? "Paste your article, book chapter, or document here..." : "Enter a URL to summarize and read..."}
-              className={`w-full h-64 p-4 rounded-xl outline-none focus:ring-2 focus:ring-amber-500/50 transition-all resize-none ${isDark ? 'bg-zinc-950 text-white placeholder-zinc-700' : 'bg-zinc-50 text-zinc-900 placeholder-zinc-400'}`}
+              className={`w-full h-48 sm:h-64 p-3 sm:p-4 rounded-xl outline-none focus:ring-2 focus:ring-amber-500/50 transition-all resize-none text-sm sm:text-base ${isDark ? 'bg-zinc-950 text-white placeholder-zinc-700' : 'bg-zinc-50 text-zinc-900 placeholder-zinc-400'}`}
             />
             {extractionMessage && (
               <div className={`absolute bottom-4 left-4 right-4 p-3 rounded-lg text-xs flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 ${isDark ? 'bg-zinc-800 text-amber-400' : 'bg-zinc-100 text-amber-700'}`}>
@@ -90,38 +90,37 @@ const InputMode: React.FC<InputModeProps> = ({ onStart, config, setConfig }) => 
             )}
           </div>
 
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <label className={`cursor-pointer px-4 py-2 rounded-lg border transition-all ${isDark ? 'border-zinc-700 hover:bg-zinc-800' : 'border-zinc-200 hover:bg-zinc-100'}`}>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 sm:gap-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+              <label className={`cursor-pointer px-4 py-2 rounded-lg border transition-all text-center w-full sm:w-auto ${isDark ? 'border-zinc-700 hover:bg-zinc-800' : 'border-zinc-200 hover:bg-zinc-100'}`}>
                 <span className="text-sm font-medium">Upload File</span>
-                <input 
-                  type="file" 
-                  className="hidden" 
-                  accept=".txt,.md,.pdf,.docx" 
+                <input
+                  type="file"
+                  className="hidden"
+                  accept=".txt,.md,.pdf,.docx"
                   onChange={handleFileUpload}
-                  disabled={isProcessing} 
+                  disabled={isProcessing}
                 />
               </label>
-              <div className="h-6 w-px bg-zinc-800 hidden md:block" />
-              <p className="text-xs opacity-40">Supported: .pdf, .docx, .txt, .md</p>
+              <p className="text-xs opacity-40 text-center sm:text-left">Supported: .pdf, .docx, .txt, .md</p>
             </div>
 
             <button
               onClick={handleSubmit}
               disabled={isProcessing || !inputText.trim()}
-              className={`w-full md:w-auto px-10 py-3 rounded-xl font-bold transition-all ${isProcessing || !inputText.trim() ? 'opacity-30 cursor-not-allowed' : 'bg-amber-500 hover:bg-amber-400 text-black shadow-lg shadow-amber-500/20 active:scale-95'}`}
+              className={`w-full sm:w-auto px-8 sm:px-10 py-3 rounded-xl font-bold transition-all text-sm sm:text-base ${isProcessing || !inputText.trim() ? 'opacity-30 cursor-not-allowed' : 'bg-amber-500 hover:bg-amber-400 text-black shadow-lg shadow-amber-500/20 active:scale-95'}`}
             >
-              {isProcessing && !extractionMessage?.includes("Success") ? 'Processing...' : 'Enter Flow'}
+              {isProcessing && !extractionMessage?.includes("Success") ? 'Processing...' : 'Start Reading'}
             </button>
           </div>
         </div>
       </div>
 
-      <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="mt-8 sm:mt-12 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
         {/* Quick Settings */}
-        <div className={`p-6 rounded-2xl border ${isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-white border-zinc-200'}`}>
-          <h3 className="font-bold mb-6 flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+        <div className={`p-4 sm:p-6 rounded-xl sm:rounded-2xl border ${isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+          <h3 className="font-bold mb-4 sm:mb-6 flex items-center gap-2 text-sm sm:text-base">
+            <svg className="w-4 sm:w-5 h-4 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             Training Parameters
           </h3>
           
@@ -179,9 +178,9 @@ const InputMode: React.FC<InputModeProps> = ({ onStart, config, setConfig }) => 
         </div>
 
         {/* Visual Settings */}
-        <div className={`p-6 rounded-2xl border ${isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-white border-zinc-200'}`}>
-          <h3 className="font-bold mb-6 flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>
+        <div className={`p-4 sm:p-6 rounded-xl sm:rounded-2xl border ${isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+          <h3 className="font-bold mb-4 sm:mb-6 flex items-center gap-2 text-sm sm:text-base">
+            <svg className="w-4 sm:w-5 h-4 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>
             Appearance
           </h3>
           <div className="space-y-6">

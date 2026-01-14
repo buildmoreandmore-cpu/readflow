@@ -1,8 +1,11 @@
 
 export enum AppMode {
+  LANDING = 'LANDING',
   INPUT = 'INPUT',
   FLOW = 'FLOW',
-  RESULTS = 'RESULTS'
+  RESULTS = 'RESULTS',
+  LIBRARY = 'LIBRARY',
+  STATS = 'STATS'
 }
 
 export enum FontType {
@@ -30,4 +33,39 @@ export interface AppConfig {
   fontSize: number;
   bionicMode: boolean;
   semanticChunking: boolean;
+}
+
+export interface SavedDocument {
+  id: string;
+  title: string;
+  author?: string;
+  sourceType: 'paste' | 'url' | 'upload' | 'gutenberg';
+  sourceUrl?: string;
+  content: string;
+  wordCount: number;
+  currentPosition: number;
+  progressPercent: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface ReadingSession {
+  id: string;
+  documentId?: string;
+  documentTitle?: string;
+  wordsRead: number;
+  durationSeconds: number;
+  averageWPM: number;
+  startedAt: number;
+  endedAt: number;
+}
+
+export interface GutenbergBook {
+  id: number;
+  title: string;
+  author: string;
+  coverUrl?: string;
+  textUrl?: string;
+  subjects?: string[];
+  downloadCount?: number;
 }
