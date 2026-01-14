@@ -53,7 +53,7 @@ const InputMode: React.FC<InputModeProps> = ({ onStart, config, setConfig }) => 
   return (
     <div className={`max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-24 ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
       <header className="mb-8 sm:mb-12 text-center">
-        <img src="/logo.png" alt="Lumen" className="h-12 sm:h-14 md:h-16 w-auto mx-auto mb-3" />
+        <img src="/logo.png" alt="Lumen" className="h-16 sm:h-20 md:h-24 w-auto mx-auto mb-3" />
         <p className="text-sm sm:text-base md:text-lg opacity-60">Train your focus. Master the art of speed reading.</p>
       </header>
 

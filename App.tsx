@@ -172,7 +172,7 @@ const App: React.FC = () => {
                 className="flex items-center gap-2 hover:opacity-80 transition-opacity"
                 title="View landing page"
               >
-                <img src="/logo.png" alt="Lumen" className="h-8 w-auto" />
+                <img src="/logo.png" alt="Lumen" className="h-10 sm:h-12 w-auto" />
               </button>
               <div className="flex items-center gap-2">
                 <button

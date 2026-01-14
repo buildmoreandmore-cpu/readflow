@@ -34,7 +34,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0b]/80 backdrop-blur-md border-b border-zinc-800/50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="Lumen" className="h-8 sm:h-10 w-auto" />
+            <img src="/logo.png" alt="Lumen" className="h-10 sm:h-12 w-auto" />
           </div>
           <div className="hidden md:flex items-center gap-6 lg:gap-8 text-sm text-zinc-400">
             <button onClick={() => scrollToSection('method')} className="hover:text-white transition-colors">Method</button>
@@ -56,7 +56,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
         <div className="max-w-4xl mx-auto text-center">
           {/* Logo */}
           <div className="mb-6 sm:mb-8">
-            <img src="/logo.png" alt="Lumen" className="h-16 sm:h-20 md:h-24 w-auto mx-auto" />
+            <img src="/logo.png" alt="Lumen" className="h-24 sm:h-32 md:h-40 lg:h-48 w-auto mx-auto" />
           </div>
 
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 leading-tight px-2">
@@ -439,7 +439,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
       <footer className="py-8 sm:py-12 px-4 sm:px-6 border-t border-zinc-800">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="Lumen" className="h-6 w-auto" />
+            <img src="/logo.png" alt="Lumen" className="h-8 sm:h-10 w-auto" />
           </div>
           <div className="text-xs sm:text-sm text-zinc-600 text-center sm:text-right">
             Built for readers who want to get faster without the crutch.
