@@ -11,15 +11,19 @@ interface LibraryProps {
   config: AppConfig;
 }
 
+// Helper to generate Gutenberg cover URL
+const getGutenbergCoverUrl = (id: number) =>
+  `https://www.gutenberg.org/cache/epub/${id}/pg${id}.cover.medium.jpg`;
+
 const FEATURED_BOOKS = [
-  { id: 1342, title: "Pride and Prejudice", author: "Jane Austen" },
-  { id: 11, title: "Alice's Adventures in Wonderland", author: "Lewis Carroll" },
-  { id: 1661, title: "The Adventures of Sherlock Holmes", author: "Arthur Conan Doyle" },
-  { id: 84, title: "Frankenstein", author: "Mary Shelley" },
-  { id: 1232, title: "The Prince", author: "Niccolò Machiavelli" },
-  { id: 174, title: "The Picture of Dorian Gray", author: "Oscar Wilde" },
-  { id: 98, title: "A Tale of Two Cities", author: "Charles Dickens" },
-  { id: 2701, title: "Moby Dick", author: "Herman Melville" },
+  { id: 1342, title: "Pride and Prejudice", author: "Jane Austen", coverUrl: getGutenbergCoverUrl(1342) },
+  { id: 11, title: "Alice's Adventures in Wonderland", author: "Lewis Carroll", coverUrl: getGutenbergCoverUrl(11) },
+  { id: 1661, title: "The Adventures of Sherlock Holmes", author: "Arthur Conan Doyle", coverUrl: getGutenbergCoverUrl(1661) },
+  { id: 84, title: "Frankenstein", author: "Mary Shelley", coverUrl: getGutenbergCoverUrl(84) },
+  { id: 1232, title: "The Prince", author: "Niccolò Machiavelli", coverUrl: getGutenbergCoverUrl(1232) },
+  { id: 174, title: "The Picture of Dorian Gray", author: "Oscar Wilde", coverUrl: getGutenbergCoverUrl(174) },
+  { id: 98, title: "A Tale of Two Cities", author: "Charles Dickens", coverUrl: getGutenbergCoverUrl(98) },
+  { id: 2701, title: "Moby Dick", author: "Herman Melville", coverUrl: getGutenbergCoverUrl(2701) },
 ];
 
 const Library: React.FC<LibraryProps> = ({
@@ -364,6 +368,8 @@ const BookCard: React.FC<{
   isLoading: boolean;
   isDark: boolean;
 }> = ({ book, onSelect, isLoading, isDark }) => {
+  const [imgError, setImgError] = React.useState(false);
+
   return (
     <div
       className={`group rounded-xl border overflow-hidden transition-all hover:scale-[1.02] ${
@@ -373,14 +379,12 @@ const BookCard: React.FC<{
       }`}
     >
       <div className={`aspect-[2/3] ${isDark ? 'bg-zinc-800' : 'bg-zinc-100'} flex items-center justify-center relative`}>
-        {book.coverUrl ? (
+        {book.coverUrl && !imgError ? (
           <img
             src={book.coverUrl}
             alt={book.title}
             className="w-full h-full object-cover"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-            }}
+            onError={() => setImgError(true)}
           />
         ) : (
           <svg className={`w-12 h-12 ${isDark ? 'text-zinc-700' : 'text-zinc-300'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
