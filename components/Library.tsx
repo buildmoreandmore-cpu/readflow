@@ -89,7 +89,14 @@ const Library: React.FC<LibraryProps> = ({
     setError(null);
 
     try {
-      const response = await fetch(book.textUrl);
+      // Use CORS proxy to fetch Gutenberg content
+      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(book.textUrl)}`;
+      const response = await fetch(proxyUrl);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch');
+      }
+
       let text = await response.text();
 
       // Clean up Gutenberg header/footer
