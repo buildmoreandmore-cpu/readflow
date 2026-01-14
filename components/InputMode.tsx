@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { AppConfig, FontType, ThemeType } from '../types';
 import { gemini } from '../services/geminiService';
+import { extractTextFromFile } from '../lib/fileExtractor';
 
 interface InputModeProps {
   onStart: (text: string) => void;
@@ -12,27 +13,39 @@ interface InputModeProps {
 const InputMode: React.FC<InputModeProps> = ({ onStart, config, setConfig }) => {
   const [inputText, setInputText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [extractionMessage, setExtractionMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'paste' | 'url'>('paste');
 
   const handleSubmit = async () => {
     if (!inputText.trim()) return;
     
     setIsProcessing(true);
+    setExtractionMessage("Gemini is optimizing your text for speed reading...");
     const processed = await gemini.processContent(inputText);
+    setExtractionMessage(null);
     setIsProcessing(false);
     onStart(processed);
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      setInputText(text);
-    };
-    reader.readAsText(file);
+    setIsProcessing(true);
+    setExtractionMessage(`Extracting content from ${file.name}...`);
+    
+    try {
+      const extractedText = await extractTextFromFile(file);
+      setInputText(extractedText);
+      setExtractionMessage("Successfully extracted. Click 'Enter Flow' to begin training.");
+    } catch (error: any) {
+      alert(error.message || "Failed to process file.");
+      setExtractionMessage(null);
+    } finally {
+      setIsProcessing(false);
+      // Reset input so the same file can be uploaded again if needed
+      e.target.value = '';
+    }
   };
 
   const isDark = config.theme === ThemeType.DARK;
@@ -62,23 +75,35 @@ const InputMode: React.FC<InputModeProps> = ({ onStart, config, setConfig }) => 
         </div>
 
         <div className="p-6">
-          <div className="mb-6">
+          <div className="mb-6 relative">
             <textarea
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder={activeTab === 'paste' ? "Paste your article, book chapter, or document here..." : "Enter a URL to summarize and read..."}
               className={`w-full h-64 p-4 rounded-xl outline-none focus:ring-2 focus:ring-amber-500/50 transition-all resize-none ${isDark ? 'bg-zinc-950 text-white placeholder-zinc-700' : 'bg-zinc-50 text-zinc-900 placeholder-zinc-400'}`}
             />
+            {extractionMessage && (
+              <div className={`absolute bottom-4 left-4 right-4 p-3 rounded-lg text-xs flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 ${isDark ? 'bg-zinc-800 text-amber-400' : 'bg-zinc-100 text-amber-700'}`}>
+                <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                {extractionMessage}
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-4">
               <label className={`cursor-pointer px-4 py-2 rounded-lg border transition-all ${isDark ? 'border-zinc-700 hover:bg-zinc-800' : 'border-zinc-200 hover:bg-zinc-100'}`}>
                 <span className="text-sm font-medium">Upload File</span>
-                <input type="file" className="hidden" accept=".txt,.md" onChange={handleFileUpload} />
+                <input 
+                  type="file" 
+                  className="hidden" 
+                  accept=".txt,.md,.pdf,.docx" 
+                  onChange={handleFileUpload}
+                  disabled={isProcessing} 
+                />
               </label>
               <div className="h-6 w-px bg-zinc-800 hidden md:block" />
-              <p className="text-xs opacity-40">Supported: .txt, .md</p>
+              <p className="text-xs opacity-40">Supported: .pdf, .docx, .txt, .md</p>
             </div>
 
             <button
@@ -86,7 +111,7 @@ const InputMode: React.FC<InputModeProps> = ({ onStart, config, setConfig }) => 
               disabled={isProcessing || !inputText.trim()}
               className={`w-full md:w-auto px-10 py-3 rounded-xl font-bold transition-all ${isProcessing || !inputText.trim() ? 'opacity-30 cursor-not-allowed' : 'bg-amber-500 hover:bg-amber-400 text-black shadow-lg shadow-amber-500/20 active:scale-95'}`}
             >
-              {isProcessing ? 'Processing...' : 'Enter Flow'}
+              {isProcessing && !extractionMessage?.includes("Success") ? 'Processing...' : 'Enter Flow'}
             </button>
           </div>
         </div>
