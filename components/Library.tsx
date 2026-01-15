@@ -408,18 +408,9 @@ const BookCard: React.FC<{
 }> = ({ book, onSelect, isLoading, isDark }) => {
   const [imgError, setImgError] = React.useState(false);
 
-  const handleClick = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!isLoading) {
-      onSelect();
-    }
-  };
-
   return (
     <div
-      onClick={handleClick}
-      onTouchEnd={handleClick}
+      onClick={() => !isLoading && onSelect()}
       className={`group rounded-lg sm:rounded-xl border overflow-hidden transition-all active:scale-95 cursor-pointer select-none ${
         isDark
           ? 'bg-zinc-900/50 border-zinc-800 active:border-amber-500/50'
