@@ -18,6 +18,8 @@ import {
   hasVisitedBefore,
   markAsVisited,
   generateId,
+  getCachedBook,
+  cacheBook,
 } from './lib/storage';
 
 const App: React.FC = () => {
@@ -34,6 +36,8 @@ const App: React.FC = () => {
   const [savedDocuments, setSavedDocuments] = useState<SavedDocument[]>([]);
   const [readingSessions, setReadingSessions] = useState<ReadingSession[]>([]);
   const [currentDocument, setCurrentDocument] = useState<SavedDocument | null>(null);
+  const [isLoadingResume, setIsLoadingResume] = useState(false);
+  const [resumeError, setResumeError] = useState<string | null>(null);
 
   // Load saved data on mount
   useEffect(() => {
@@ -64,7 +68,7 @@ const App: React.FC = () => {
     setMode(AppMode.INPUT);
   }, []);
 
-  const handleStartFlow = useCallback((text: string, title?: string, author?: string) => {
+  const handleStartFlow = useCallback((text: string, title?: string, author?: string, gutenbergId?: number) => {
     setContent(text);
 
     // Create or update document
@@ -73,8 +77,11 @@ const App: React.FC = () => {
       const doc = saveDocument({
         title,
         author,
-        sourceType: 'gutenberg',
-        content: text,
+        sourceType: gutenbergId ? 'gutenberg' : 'paste',
+        gutenbergId,
+        // Don't store content for Gutenberg books (too large for localStorage)
+        // Content is cached separately and re-fetched on resume
+        content: gutenbergId ? undefined : text,
         wordCount,
         currentPosition: 0,
         progressPercent: 0,
@@ -142,8 +149,8 @@ const App: React.FC = () => {
     setMode(AppMode.STATS);
   }, []);
 
-  const handleSelectBook = useCallback((bookContent: string, title: string, author?: string) => {
-    handleStartFlow(bookContent, title, author);
+  const handleSelectBook = useCallback((bookContent: string, title: string, author?: string, gutenbergId?: number) => {
+    handleStartFlow(bookContent, title, author, gutenbergId);
   }, [handleStartFlow]);
 
   const handleDeleteDocument = useCallback((id: string) => {
@@ -151,10 +158,83 @@ const App: React.FC = () => {
     setSavedDocuments(getSavedDocuments());
   }, []);
 
-  const handleResumeDocument = useCallback((doc: SavedDocument) => {
-    setContent(doc.content);
-    setCurrentDocument(doc);
-    setMode(AppMode.FLOW);
+  const handleResumeDocument = useCallback(async (doc: SavedDocument) => {
+    setResumeError(null);
+
+    // If document has content (pasted/uploaded), use it directly
+    if (doc.content) {
+      setContent(doc.content);
+      setCurrentDocument(doc);
+      setMode(AppMode.FLOW);
+      return;
+    }
+
+    // For Gutenberg books, fetch content
+    if (doc.gutenbergId) {
+      // Check cache first
+      const cached = getCachedBook(doc.gutenbergId);
+      if (cached) {
+        setContent(cached);
+        setCurrentDocument(doc);
+        setMode(AppMode.FLOW);
+        return;
+      }
+
+      // Fetch from Gutenberg
+      setIsLoadingResume(true);
+      try {
+        const textUrl = `https://www.gutenberg.org/cache/epub/${doc.gutenbergId}/pg${doc.gutenbergId}.txt`;
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(textUrl)}`;
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+        const response = await fetch(proxyUrl, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) throw new Error('Failed to fetch');
+
+        let text = await response.text();
+
+        // Clean up Gutenberg header/footer
+        const startMarkers = ['*** START OF THE PROJECT GUTENBERG', '*** START OF THIS PROJECT GUTENBERG'];
+        const endMarkers = ['*** END OF THE PROJECT GUTENBERG', '*** END OF THIS PROJECT GUTENBERG', 'End of the Project Gutenberg'];
+
+        for (const marker of startMarkers) {
+          const idx = text.indexOf(marker);
+          if (idx !== -1) {
+            const lineEnd = text.indexOf('\n', idx);
+            text = text.substring(lineEnd + 1);
+            break;
+          }
+        }
+
+        for (const marker of endMarkers) {
+          const idx = text.indexOf(marker);
+          if (idx !== -1) {
+            text = text.substring(0, idx);
+            break;
+          }
+        }
+
+        text = text.trim();
+
+        // Cache for next time
+        cacheBook(doc.gutenbergId, text);
+
+        setContent(text);
+        setCurrentDocument(doc);
+        setMode(AppMode.FLOW);
+      } catch (err: any) {
+        setResumeError(err.name === 'AbortError' ? 'Request timed out. Please try again.' : 'Failed to load book. Please try again.');
+      } finally {
+        setIsLoadingResume(false);
+      }
+      return;
+    }
+
+    // Fallback: no content and no gutenbergId
+    setResumeError('Unable to load this document.');
   }, []);
 
   const handleBackToInput = useCallback(() => {
@@ -266,6 +346,8 @@ const App: React.FC = () => {
           onDeleteDocument={handleDeleteDocument}
           onResumeDocument={handleResumeDocument}
           config={config}
+          isLoadingResume={isLoadingResume}
+          resumeError={resumeError}
         />
       )}
 

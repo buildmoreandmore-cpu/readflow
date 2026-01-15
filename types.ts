@@ -41,7 +41,8 @@ export interface SavedDocument {
   author?: string;
   sourceType: 'paste' | 'url' | 'upload' | 'gutenberg';
   sourceUrl?: string;
-  content: string;
+  gutenbergId?: number;
+  content?: string;
   wordCount: number;
   currentPosition: number;
   progressPercent: number;
