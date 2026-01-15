@@ -373,13 +373,15 @@ const Library: React.FC<LibraryProps> = ({
                     <div className="flex gap-2 ml-auto sm:ml-0">
                       <button
                         onClick={() => onResumeDocument(doc)}
-                        className="flex-1 sm:flex-none bg-amber-500 hover:bg-amber-400 text-black font-medium py-2 px-4 rounded-lg transition-colors text-xs sm:text-sm"
+                        className="flex-1 sm:flex-none bg-amber-500 active:bg-amber-600 text-black font-medium py-2.5 px-5 rounded-lg transition-colors text-xs sm:text-sm select-none"
+                        style={{ touchAction: 'manipulation' }}
                       >
                         {doc.progressPercent > 0 ? 'Resume' : 'Read'}
                       </button>
                       <button
                         onClick={() => onDeleteDocument(doc.id)}
-                        className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-zinc-800 text-zinc-500' : 'hover:bg-zinc-100 text-zinc-400'}`}
+                        className={`p-2.5 rounded-lg transition-colors select-none ${isDark ? 'active:bg-zinc-700 text-zinc-500' : 'active:bg-zinc-200 text-zinc-400'}`}
+                        style={{ touchAction: 'manipulation' }}
                       >
                         <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -406,21 +408,33 @@ const BookCard: React.FC<{
 }> = ({ book, onSelect, isLoading, isDark }) => {
   const [imgError, setImgError] = React.useState(false);
 
+  const handleClick = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isLoading) {
+      onSelect();
+    }
+  };
+
   return (
     <div
-      className={`group rounded-lg sm:rounded-xl border overflow-hidden transition-all hover:scale-[1.02] ${
+      onClick={handleClick}
+      onTouchEnd={handleClick}
+      className={`group rounded-lg sm:rounded-xl border overflow-hidden transition-all active:scale-95 cursor-pointer select-none ${
         isDark
-          ? 'bg-zinc-900/50 border-zinc-800 hover:border-zinc-700'
-          : 'bg-white border-zinc-200 hover:border-zinc-300'
+          ? 'bg-zinc-900/50 border-zinc-800 active:border-amber-500/50'
+          : 'bg-white border-zinc-200 active:border-amber-500/50'
       }`}
+      style={{ touchAction: 'manipulation' }}
     >
-      <div className={`aspect-[2/3] ${isDark ? 'bg-zinc-800' : 'bg-zinc-100'} flex items-center justify-center relative`}>
+      <div className={`aspect-[2/3] ${isDark ? 'bg-zinc-800' : 'bg-zinc-100'} flex items-center justify-center relative pointer-events-none`}>
         {book.coverUrl && !imgError ? (
           <img
             src={book.coverUrl}
             alt={book.title}
             className="w-full h-full object-cover"
             onError={() => setImgError(true)}
+            draggable={false}
           />
         ) : (
           <svg className={`w-8 h-8 sm:w-12 sm:h-12 ${isDark ? 'text-zinc-700' : 'text-zinc-300'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -436,16 +450,18 @@ const BookCard: React.FC<{
           </div>
         )}
       </div>
-      <div className="p-2.5 sm:p-4">
+      <div className="p-2.5 sm:p-4 pointer-events-none">
         <h3 className="font-medium text-xs sm:text-sm line-clamp-2 mb-0.5 sm:mb-1">{book.title}</h3>
         <p className={`text-[10px] sm:text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'} mb-2 sm:mb-3 truncate`}>{book.author}</p>
-        <button
-          onClick={onSelect}
-          disabled={isLoading}
-          className="w-full bg-amber-500 hover:bg-amber-400 disabled:bg-amber-500/50 text-black font-medium py-1.5 sm:py-2 px-2 sm:px-3 rounded-md sm:rounded-lg transition-colors text-xs sm:text-sm"
+        <div
+          className={`w-full text-center font-medium py-2 sm:py-2.5 px-2 sm:px-3 rounded-md sm:rounded-lg text-xs sm:text-sm ${
+            isLoading
+              ? 'bg-amber-500/50 text-black/50'
+              : 'bg-amber-500 text-black'
+          }`}
         >
           {isLoading ? 'Loading...' : 'Read Now'}
-        </button>
+        </div>
       </div>
     </div>
   );

@@ -116,10 +116,18 @@ const App: React.FC = () => {
     setMode(AppMode.RESULTS);
   }, [currentDocument]);
 
-  const handleExitFlow = useCallback(() => {
+  const handleExitFlow = useCallback((currentPosition?: number, progressPercent?: number) => {
+    // Save progress if we have a current document
+    if (currentDocument && currentPosition !== undefined && progressPercent !== undefined) {
+      updateDocument(currentDocument.id, {
+        currentPosition,
+        progressPercent,
+      });
+      setSavedDocuments(getSavedDocuments());
+    }
     setCurrentDocument(null);
     setMode(AppMode.INPUT);
-  }, []);
+  }, [currentDocument]);
 
   const handleRestart = useCallback(() => {
     setMode(AppMode.FLOW);
@@ -237,6 +245,7 @@ const App: React.FC = () => {
           onComplete={handleSessionComplete}
           onExit={handleExitFlow}
           onUpdateConfig={setConfig}
+          startPosition={currentDocument?.currentPosition || 0}
         />
       )}
 

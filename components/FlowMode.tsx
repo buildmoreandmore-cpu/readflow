@@ -10,13 +10,14 @@ interface FlowModeProps {
   content: string;
   config: AppConfig;
   onComplete: (stats: ReadingStats) => void;
-  onExit: () => void;
+  onExit: (currentPosition?: number, progressPercent?: number) => void;
   onUpdateConfig: React.Dispatch<React.SetStateAction<AppConfig>>;
+  startPosition?: number;
 }
 
-const FlowMode: React.FC<FlowModeProps> = ({ content, config, onComplete, onExit, onUpdateConfig }) => {
+const FlowMode: React.FC<FlowModeProps> = ({ content, config, onComplete, onExit, onUpdateConfig, startPosition = 0 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(startPosition);
   const [showControls, setShowControls] = useState(true);
   const controlsTimeoutRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(Date.now());
@@ -95,7 +96,7 @@ const FlowMode: React.FC<FlowModeProps> = ({ content, config, onComplete, onExit
           onUpdateConfig(prev => ({ ...prev, wpm: Math.max(100, prev.wpm - 25) }));
           break;
         case 'Escape':
-          onExit();
+          onExit(currentIndex, Math.round((currentIndex / totalChunks) * 100));
           break;
         case 'KeyR':
           setCurrentIndex(0);
@@ -238,8 +239,8 @@ const FlowMode: React.FC<FlowModeProps> = ({ content, config, onComplete, onExit
           <span className="font-mono text-amber-500 font-bold leading-none">{config.wpm}</span>
         </div>
 
-        <button 
-          onClick={onExit}
+        <button
+          onClick={() => onExit(currentIndex, Math.round((currentIndex / totalChunks) * 100))}
           className="p-2 opacity-40 hover:opacity-100 hover:text-red-400 transition-all"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
