@@ -3,9 +3,10 @@ import React, { useState, useEffect } from 'react';
 
 interface LandingPageProps {
   onStart: () => void;
+  onOpenLibrary?: () => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onStart, onOpenLibrary }) => {
   const [activeChunkIndex, setActiveChunkIndex] = useState(0);
 
   // Demo chunks for animation
@@ -39,8 +40,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
           <div className="hidden md:flex items-center gap-6 lg:gap-8 text-sm text-zinc-400">
             <button onClick={() => scrollToSection('method')} className="hover:text-white transition-colors">Method</button>
             <button onClick={() => scrollToSection('features')} className="hover:text-white transition-colors">Features</button>
+            <button onClick={() => scrollToSection('library')} className="hover:text-white transition-colors">Library</button>
             <button onClick={() => scrollToSection('pricing')} className="hover:text-white transition-colors">Pricing</button>
-            <button onClick={() => scrollToSection('faq')} className="hover:text-white transition-colors">FAQ</button>
           </div>
           <button
             onClick={onStart}
@@ -256,8 +257,84 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
         </div>
       </section>
 
+      {/* Library Section */}
+      <section id="library" className="py-16 sm:py-24 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-8 sm:mb-12">
+            <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs sm:text-sm font-medium px-3 py-1.5 rounded-full mb-4 sm:mb-6">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              Free Library Included
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">
+              Don't have anything to read?
+            </h2>
+            <p className="text-zinc-400 text-base sm:text-lg max-w-2xl mx-auto">
+              Access <span className="text-amber-500 font-semibold">60,000+ free books</span> from Project Gutenberg.
+              Classic literature, timeless stories—all ready for speed reading.
+            </p>
+          </div>
+
+          {/* Book covers showcase */}
+          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 sm:gap-3 mb-8 sm:mb-10">
+            {[
+              { id: 1342, title: "Pride and Prejudice" },
+              { id: 11, title: "Alice in Wonderland" },
+              { id: 1661, title: "Sherlock Holmes" },
+              { id: 84, title: "Frankenstein" },
+              { id: 174, title: "Dorian Gray" },
+              { id: 98, title: "Tale of Two Cities" },
+              { id: 2701, title: "Moby Dick" },
+              { id: 1232, title: "The Prince" },
+            ].map((book) => (
+              <div
+                key={book.id}
+                className="aspect-[2/3] rounded-lg overflow-hidden bg-zinc-800 hover:scale-105 transition-transform cursor-pointer"
+                onClick={onOpenLibrary}
+                title={book.title}
+              >
+                <img
+                  src={`https://www.gutenberg.org/cache/epub/${book.id}/pg${book.id}.cover.medium.jpg`}
+                  alt={book.title}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Featured titles */}
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-8 sm:mb-10 text-xs sm:text-sm text-zinc-500">
+            <span className="px-2 sm:px-3 py-1 bg-zinc-900 rounded-full">Pride & Prejudice</span>
+            <span className="px-2 sm:px-3 py-1 bg-zinc-900 rounded-full">Sherlock Holmes</span>
+            <span className="px-2 sm:px-3 py-1 bg-zinc-900 rounded-full">Frankenstein</span>
+            <span className="px-2 sm:px-3 py-1 bg-zinc-900 rounded-full">Moby Dick</span>
+            <span className="hidden sm:inline px-3 py-1 bg-zinc-900 rounded-full">The Great Gatsby</span>
+            <span className="px-2 sm:px-3 py-1 bg-zinc-900 rounded-full">+ 60,000 more</span>
+          </div>
+
+          <div className="text-center">
+            <button
+              onClick={onOpenLibrary}
+              className="inline-flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white font-medium py-3 px-6 sm:px-8 rounded-xl transition-colors text-sm sm:text-base"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              Browse Free Library
+            </button>
+            <p className="text-xs sm:text-sm text-zinc-600 mt-3">
+              No sign-up required. Start reading classics instantly.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Social Proof Section */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6">
+      <section className="py-16 sm:py-24 px-4 sm:px-6 bg-zinc-900/30">
         <div className="max-w-4xl mx-auto text-center">
           <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-amber-500/10 border border-amber-500/20 rounded-xl sm:rounded-2xl p-6 sm:p-12">
             <div className="text-4xl sm:text-5xl mb-4 sm:mb-6">40%</div>

@@ -126,6 +126,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleOpenLibrary = useCallback(() => {
+    markAsVisited();
     setMode(AppMode.LIBRARY);
   }, []);
 
@@ -159,7 +160,7 @@ const App: React.FC = () => {
   return (
     <div className={`min-h-screen w-full transition-colors duration-500 font-sans-ui`}>
       {mode === AppMode.LANDING && (
-        <LandingPage onStart={handleLandingStart} />
+        <LandingPage onStart={handleLandingStart} onOpenLibrary={handleOpenLibrary} />
       )}
 
       {mode === AppMode.INPUT && (
