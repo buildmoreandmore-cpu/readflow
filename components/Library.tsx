@@ -1,10 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { GutenbergBook, SavedDocument, AppConfig } from '../types';
-import { getCachedBook, cacheBook } from '../lib/storage';
+import { GutenbergBook, SavedDocument, AppConfig, SubstackPublication, SubstackArticle } from '../types';
+import { getCachedBook, cacheBook, cacheSubstackArticle } from '../lib/storage';
+import { FEATURED_PUBLICATIONS, fetchPublicationFeed, formatPublishedDate, getPublicationLogoUrl } from '../services/substackService';
 
 interface LibraryProps {
   onSelectBook: (content: string, title: string, author?: string, gutenbergId?: number) => void;
+  onSelectSubstackArticle: (content: string, title: string, author: string, articleId: string, publicationName: string) => void;
   onBack: () => void;
   savedDocuments: SavedDocument[];
   onDeleteDocument: (id: string) => void;
@@ -31,6 +33,7 @@ const FEATURED_BOOKS = [
 
 const Library: React.FC<LibraryProps> = ({
   onSelectBook,
+  onSelectSubstackArticle,
   onBack,
   savedDocuments,
   onDeleteDocument,
@@ -39,7 +42,7 @@ const Library: React.FC<LibraryProps> = ({
   isLoadingResume = false,
   resumeError = null
 }) => {
-  const [activeTab, setActiveTab] = useState<'saved' | 'discover'>('discover');
+  const [activeTab, setActiveTab] = useState<'saved' | 'discover' | 'substack'>('discover');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<GutenbergBook[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -47,6 +50,13 @@ const Library: React.FC<LibraryProps> = ({
   const [loadingBookId, setLoadingBookId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [resumingDocId, setResumingDocId] = useState<string | null>(null);
+
+  // Substack state
+  const [selectedPublication, setSelectedPublication] = useState<SubstackPublication | null>(null);
+  const [substackArticles, setSubstackArticles] = useState<SubstackArticle[]>([]);
+  const [isLoadingFeed, setIsLoadingFeed] = useState(false);
+  const [loadingArticleId, setLoadingArticleId] = useState<string | null>(null);
+  const [substackError, setSubstackError] = useState<string | null>(null);
 
   const isDark = config.theme === 'DARK';
 
@@ -202,6 +212,54 @@ const Library: React.FC<LibraryProps> = ({
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  // Substack: Select a publication and fetch its feed
+  const handleSelectPublication = async (publication: SubstackPublication) => {
+    setSelectedPublication(publication);
+    setSubstackArticles([]);
+    setSubstackError(null);
+    setIsLoadingFeed(true);
+
+    try {
+      const articles = await fetchPublicationFeed(publication.name);
+      setSubstackArticles(articles);
+    } catch (err: any) {
+      setSubstackError(err.message || 'Failed to load articles. Please try again.');
+    } finally {
+      setIsLoadingFeed(false);
+    }
+  };
+
+  // Substack: Select an article to read
+  const handleSelectArticle = (article: SubstackArticle) => {
+    if (!article.content || article.content.length < 50) {
+      setSubstackError('This article appears to be paywalled or has no readable content.');
+      return;
+    }
+
+    setLoadingArticleId(article.id);
+
+    // Cache the article content
+    cacheSubstackArticle(article.id, article.content);
+
+    // Pass to App.tsx handler
+    onSelectSubstackArticle(
+      article.content,
+      article.title,
+      article.author,
+      article.id,
+      article.publicationName
+    );
+
+    setLoadingArticleId(null);
+  };
+
+  // Substack: Go back to publications list
+  const handleBackToPublications = () => {
+    setSelectedPublication(null);
+    setSubstackArticles([]);
+    setSubstackError(null);
+  };
+
   return (
     <div className={`min-h-screen ${isDark ? 'bg-[#0a0a0b] text-[#f5f5f4]' : 'bg-[#faf9f7] text-[#1c1c1c]'}`}>
       {/* Header */}
@@ -231,8 +289,19 @@ const Library: React.FC<LibraryProps> = ({
                   : isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-600 hover:text-black'
               }`}
             >
-              <span className="hidden sm:inline">Discover (60,000+ Books)</span>
-              <span className="sm:hidden">Discover</span>
+              <span className="hidden sm:inline">Books</span>
+              <span className="sm:hidden">Books</span>
+            </button>
+            <button
+              onClick={() => { setActiveTab('substack'); handleBackToPublications(); }}
+              className={`flex-1 py-2 px-2 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-colors ${
+                activeTab === 'substack'
+                  ? 'bg-amber-500 text-black'
+                  : isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-600 hover:text-black'
+              }`}
+            >
+              <span className="hidden sm:inline">Substack</span>
+              <span className="sm:hidden">Substack</span>
             </button>
             <button
               onClick={() => setActiveTab('saved')}
@@ -242,7 +311,7 @@ const Library: React.FC<LibraryProps> = ({
                   : isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-600 hover:text-black'
               }`}
             >
-              <span className="hidden sm:inline">My Documents ({savedDocuments.length})</span>
+              <span className="hidden sm:inline">Saved ({savedDocuments.length})</span>
               <span className="sm:hidden">Saved ({savedDocuments.length})</span>
             </button>
           </div>
@@ -331,6 +400,96 @@ const Library: React.FC<LibraryProps> = ({
                 </div>
               </>
             ) : null}
+          </>
+        )}
+
+        {activeTab === 'substack' && (
+          <>
+            {substackError && (
+              <div className="mb-4 p-3 sm:p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-xs sm:text-sm">
+                {substackError}
+              </div>
+            )}
+
+            {selectedPublication ? (
+              // Article list view
+              <>
+                <button
+                  onClick={handleBackToPublications}
+                  className={`flex items-center gap-2 mb-4 ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-600 hover:text-black'} transition-colors`}
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                  <span className="text-sm">Back to publications</span>
+                </button>
+
+                <div className="flex items-center gap-3 mb-6">
+                  <div className={`w-12 h-12 rounded-lg overflow-hidden ${isDark ? 'bg-zinc-800' : 'bg-zinc-100'} flex items-center justify-center`}>
+                    <img
+                      src={getPublicationLogoUrl(selectedPublication.name)}
+                      alt={selectedPublication.displayName}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold">{selectedPublication.displayName}</h2>
+                    <p className={`text-sm ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>by {selectedPublication.author}</p>
+                  </div>
+                </div>
+
+                {isLoadingFeed ? (
+                  <div className="flex items-center justify-center py-12">
+                    <svg className="w-8 h-8 text-amber-500 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </div>
+                ) : substackArticles.length === 0 ? (
+                  <div className={`text-center py-12 ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                    No articles found. This publication may require a subscription.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {substackArticles.map((article) => (
+                      <SubstackArticleCard
+                        key={article.id}
+                        article={article}
+                        onSelect={() => handleSelectArticle(article)}
+                        isLoading={loadingArticleId === article.id}
+                        isDark={isDark}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              // Publications grid view
+              <>
+                <h2 className={`text-base sm:text-lg font-semibold mb-3 sm:mb-4 ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                  Featured Publications
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                  {FEATURED_PUBLICATIONS.map((publication) => (
+                    <SubstackPublicationCard
+                      key={publication.name}
+                      publication={publication}
+                      onSelect={() => handleSelectPublication(publication)}
+                      isDark={isDark}
+                    />
+                  ))}
+                </div>
+
+                <div className={`mt-6 sm:mt-12 p-4 sm:p-6 rounded-xl ${isDark ? 'bg-zinc-900/50 border border-zinc-800' : 'bg-zinc-100 border border-zinc-200'}`}>
+                  <h3 className="font-semibold mb-2 text-sm sm:text-base">About Substack</h3>
+                  <p className={`text-xs sm:text-sm ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
+                    Substack is a platform for independent writers and publishers. Browse free articles from popular newsletters.
+                    Note: Paywalled content requires a subscription and cannot be read here.
+                  </p>
+                </div>
+              </>
+            )}
           </>
         )}
 
@@ -493,6 +652,111 @@ const BookCard: React.FC<{
           }`}
         >
           {isLoading ? 'Loading...' : 'Read Now'}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Substack Publication Card Component
+const SubstackPublicationCard: React.FC<{
+  publication: SubstackPublication;
+  onSelect: () => void;
+  isDark: boolean;
+}> = ({ publication, onSelect, isDark }) => {
+  const [imgError, setImgError] = React.useState(false);
+
+  return (
+    <div
+      onClick={onSelect}
+      className={`group rounded-lg sm:rounded-xl border overflow-hidden transition-all active:scale-98 cursor-pointer select-none p-4 ${
+        isDark
+          ? 'bg-zinc-900/50 border-zinc-800 hover:border-amber-500/50'
+          : 'bg-white border-zinc-200 hover:border-amber-500/50'
+      }`}
+      style={{ touchAction: 'manipulation' }}
+    >
+      <div className="flex items-start gap-3">
+        <div className={`w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 ${isDark ? 'bg-zinc-800' : 'bg-zinc-100'} flex items-center justify-center`}>
+          {!imgError ? (
+            <img
+              src={getPublicationLogoUrl(publication.name)}
+              alt={publication.displayName}
+              className="w-full h-full object-cover"
+              onError={() => setImgError(true)}
+              draggable={false}
+            />
+          ) : (
+            <svg className={`w-6 h-6 ${isDark ? 'text-zinc-600' : 'text-zinc-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+            </svg>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-medium text-sm sm:text-base truncate">{publication.displayName}</h3>
+          <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'} mb-1`}>by {publication.author}</p>
+          {publication.description && (
+            <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-zinc-600'} line-clamp-2`}>{publication.description}</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Substack Article Card Component
+const SubstackArticleCard: React.FC<{
+  article: SubstackArticle;
+  onSelect: () => void;
+  isLoading: boolean;
+  isDark: boolean;
+}> = ({ article, onSelect, isLoading, isDark }) => {
+  const hasContent = article.content && article.content.length > 50;
+
+  return (
+    <div
+      onClick={() => !isLoading && hasContent && onSelect()}
+      className={`rounded-lg sm:rounded-xl border overflow-hidden transition-all select-none p-4 ${
+        hasContent ? 'cursor-pointer active:scale-98' : 'cursor-not-allowed opacity-60'
+      } ${
+        isDark
+          ? 'bg-zinc-900/50 border-zinc-800 hover:border-amber-500/50'
+          : 'bg-white border-zinc-200 hover:border-amber-500/50'
+      }`}
+      style={{ touchAction: 'manipulation' }}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-medium text-sm sm:text-base line-clamp-2 mb-1">{article.title}</h3>
+          <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'} mb-2`}>
+            {formatPublishedDate(article.publishedAt)}
+          </p>
+          {article.description && (
+            <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-zinc-600'} line-clamp-2`}>
+              {article.description.replace(/<[^>]*>/g, '').substring(0, 150)}...
+            </p>
+          )}
+          {!hasContent && (
+            <p className="text-xs text-amber-500 mt-2">Subscriber-only content</p>
+          )}
+        </div>
+        <div className="flex-shrink-0">
+          {isLoading ? (
+            <svg className="w-5 h-5 text-amber-500 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          ) : hasContent ? (
+            <button
+              className="bg-amber-500 text-black font-medium py-2 px-4 rounded-lg text-xs sm:text-sm"
+            >
+              Read
+            </button>
+          ) : (
+            <svg className={`w-5 h-5 ${isDark ? 'text-zinc-600' : 'text-zinc-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          )}
         </div>
       </div>
     </div>

@@ -39,9 +39,11 @@ export interface SavedDocument {
   id: string;
   title: string;
   author?: string;
-  sourceType: 'paste' | 'url' | 'upload' | 'gutenberg';
+  sourceType: 'paste' | 'url' | 'upload' | 'gutenberg' | 'substack';
   sourceUrl?: string;
   gutenbergId?: number;
+  substackArticleId?: string;
+  substackPublicationName?: string;
   content?: string;
   wordCount: number;
   currentPosition: number;
@@ -69,4 +71,23 @@ export interface GutenbergBook {
   textUrl?: string;
   subjects?: string[];
   downloadCount?: number;
+}
+
+export interface SubstackPublication {
+  name: string;           // URL slug e.g., "stratechery"
+  displayName: string;    // Display name e.g., "Stratechery"
+  author: string;         // Author name
+  description?: string;
+  logoUrl?: string;
+}
+
+export interface SubstackArticle {
+  id: string;             // guid from RSS
+  title: string;
+  author: string;
+  publicationName: string;
+  publishedAt: string;    // pubDate
+  link: string;           // permalink
+  description: string;    // summary/excerpt
+  content?: string;       // full article text (extracted)
 }

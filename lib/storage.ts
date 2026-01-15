@@ -153,3 +153,48 @@ export const cacheBook = (bookId: number, content: string): void => {
     localStorage.removeItem(BOOK_CACHE_KEY);
   }
 };
+
+// Substack article cache
+const SUBSTACK_CACHE_KEY = 'lumen_substack_cache';
+const MAX_CACHED_ARTICLES = 20;
+
+interface CachedArticle {
+  id: string;
+  content: string;
+  cachedAt: number;
+}
+
+export const getCachedSubstackArticle = (articleId: string): string | null => {
+  try {
+    const data = localStorage.getItem(SUBSTACK_CACHE_KEY);
+    if (!data) return null;
+    const cache: CachedArticle[] = JSON.parse(data);
+    const article = cache.find(a => a.id === articleId);
+    return article?.content || null;
+  } catch {
+    return null;
+  }
+};
+
+export const cacheSubstackArticle = (articleId: string, content: string): void => {
+  try {
+    const data = localStorage.getItem(SUBSTACK_CACHE_KEY);
+    let cache: CachedArticle[] = data ? JSON.parse(data) : [];
+
+    // Remove if already cached
+    cache = cache.filter(a => a.id !== articleId);
+
+    // Add to front
+    cache.unshift({ id: articleId, content, cachedAt: Date.now() });
+
+    // Keep only last N articles to manage storage
+    if (cache.length > MAX_CACHED_ARTICLES) {
+      cache = cache.slice(0, MAX_CACHED_ARTICLES);
+    }
+
+    localStorage.setItem(SUBSTACK_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // Storage might be full, clear old cache
+    localStorage.removeItem(SUBSTACK_CACHE_KEY);
+  }
+};

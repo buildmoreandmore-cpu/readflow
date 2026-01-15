@@ -20,7 +20,10 @@ import {
   generateId,
   getCachedBook,
   cacheBook,
+  getCachedSubstackArticle,
+  cacheSubstackArticle,
 } from './lib/storage';
+import { fetchPublicationFeed } from './services/substackService';
 
 const App: React.FC = () => {
   // Determine initial mode based on first visit
@@ -153,6 +156,31 @@ const App: React.FC = () => {
     handleStartFlow(bookContent, title, author, gutenbergId);
   }, [handleStartFlow]);
 
+  const handleSelectSubstackArticle = useCallback((
+    content: string,
+    title: string,
+    author: string,
+    articleId: string,
+    publicationName: string
+  ) => {
+    setContent(content);
+
+    const wordCount = content.split(/\s+/).filter(w => w.length > 0).length;
+    const doc = saveDocument({
+      title,
+      author,
+      sourceType: 'substack',
+      substackArticleId: articleId,
+      substackPublicationName: publicationName,
+      wordCount,
+      currentPosition: 0,
+      progressPercent: 0,
+    });
+    setCurrentDocument(doc);
+    setSavedDocuments(getSavedDocuments());
+    setMode(AppMode.FLOW);
+  }, []);
+
   const handleDeleteDocument = useCallback((id: string) => {
     deleteDocument(id);
     setSavedDocuments(getSavedDocuments());
@@ -233,7 +261,42 @@ const App: React.FC = () => {
       return;
     }
 
-    // Fallback: no content and no gutenbergId
+    // For Substack articles, fetch content from feed
+    if (doc.substackArticleId && doc.substackPublicationName) {
+      // Check cache first
+      const cached = getCachedSubstackArticle(doc.substackArticleId);
+      if (cached) {
+        setContent(cached);
+        setCurrentDocument(doc);
+        setMode(AppMode.FLOW);
+        return;
+      }
+
+      // Fetch from Substack RSS feed
+      setIsLoadingResume(true);
+      try {
+        const articles = await fetchPublicationFeed(doc.substackPublicationName);
+        const article = articles.find(a => a.id === doc.substackArticleId);
+
+        if (article?.content && article.content.length > 50) {
+          // Cache for next time
+          cacheSubstackArticle(doc.substackArticleId, article.content);
+
+          setContent(article.content);
+          setCurrentDocument(doc);
+          setMode(AppMode.FLOW);
+        } else {
+          setResumeError('Could not load article content. It may no longer be available in the RSS feed.');
+        }
+      } catch (err: any) {
+        setResumeError(err.name === 'AbortError' ? 'Request timed out. Please try again.' : 'Failed to load article. Please try again.');
+      } finally {
+        setIsLoadingResume(false);
+      }
+      return;
+    }
+
+    // Fallback: no content and no gutenbergId/substackId
     setResumeError('Unable to load this document.');
   }, []);
 
@@ -341,6 +404,7 @@ const App: React.FC = () => {
       {mode === AppMode.LIBRARY && (
         <Library
           onSelectBook={handleSelectBook}
+          onSelectSubstackArticle={handleSelectSubstackArticle}
           onBack={handleBackToInput}
           savedDocuments={savedDocuments}
           onDeleteDocument={handleDeleteDocument}
