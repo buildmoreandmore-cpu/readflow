@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { GutenbergBook, SavedDocument, AppConfig } from '../types';
+import { getCachedBook, cacheBook } from '../lib/storage';
 
 interface LibraryProps {
   onSelectBook: (content: string, title: string, author?: string) => void;
@@ -88,17 +89,29 @@ const Library: React.FC<LibraryProps> = ({
     setLoadingBookId(book.id);
     setError(null);
 
+    // Check cache first for instant loading
+    const cached = getCachedBook(book.id);
+    if (cached) {
+      onSelectBook(cached, book.title, book.author);
+      setIsLoading(false);
+      setLoadingBookId(null);
+      return;
+    }
+
     try {
-      // Use CORS proxy to fetch Gutenberg content
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(book.textUrl)}`;
-      const response = await fetch(proxyUrl);
+      // Use faster CORS proxy with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(book.textUrl)}`;
+      const response = await fetch(proxyUrl, { signal: controller.signal });
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error('Failed to fetch');
       }
 
-      const data = await response.json();
-      let text = data.contents || '';
+      let text = await response.text();
 
       if (!text) {
         throw new Error('No content returned');
@@ -141,9 +154,16 @@ const Library: React.FC<LibraryProps> = ({
         return;
       }
 
+      // Cache for next time
+      cacheBook(book.id, text);
+
       onSelectBook(text, book.title, book.author);
-    } catch (err) {
-      setError('Failed to fetch book content. Please try again.');
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        setError('Request timed out. Please try again.');
+      } else {
+        setError('Failed to fetch book content. Please try again.');
+      }
       console.error('Fetch error:', err);
     } finally {
       setIsLoading(false);

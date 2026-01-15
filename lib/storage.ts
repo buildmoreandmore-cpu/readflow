@@ -108,3 +108,48 @@ export const hasVisitedBefore = (): boolean => {
 export const markAsVisited = (): void => {
   localStorage.setItem(VISITED_KEY, 'true');
 };
+
+// Book cache for faster loading
+const BOOK_CACHE_KEY = 'lumen_book_cache';
+const MAX_CACHED_BOOKS = 10;
+
+interface CachedBook {
+  id: number;
+  content: string;
+  cachedAt: number;
+}
+
+export const getCachedBook = (bookId: number): string | null => {
+  try {
+    const data = localStorage.getItem(BOOK_CACHE_KEY);
+    if (!data) return null;
+    const cache: CachedBook[] = JSON.parse(data);
+    const book = cache.find(b => b.id === bookId);
+    return book?.content || null;
+  } catch {
+    return null;
+  }
+};
+
+export const cacheBook = (bookId: number, content: string): void => {
+  try {
+    const data = localStorage.getItem(BOOK_CACHE_KEY);
+    let cache: CachedBook[] = data ? JSON.parse(data) : [];
+
+    // Remove if already cached
+    cache = cache.filter(b => b.id !== bookId);
+
+    // Add to front
+    cache.unshift({ id: bookId, content, cachedAt: Date.now() });
+
+    // Keep only last N books to manage storage
+    if (cache.length > MAX_CACHED_BOOKS) {
+      cache = cache.slice(0, MAX_CACHED_BOOKS);
+    }
+
+    localStorage.setItem(BOOK_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // Storage might be full, clear old cache
+    localStorage.removeItem(BOOK_CACHE_KEY);
+  }
+};
