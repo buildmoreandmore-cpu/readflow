@@ -502,8 +502,8 @@ const Library: React.FC<LibraryProps> = ({
                   <span className="text-sm">Back to publications</span>
                 </button>
 
-                <div className="flex items-center gap-3 mb-6">
-                  <div className={`w-12 h-12 rounded-lg overflow-hidden ${isDark ? 'bg-zinc-800' : 'bg-zinc-100'} flex items-center justify-center`}>
+                <div className="flex items-center gap-2.5 sm:gap-3 mb-4 sm:mb-6">
+                  <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden ${isDark ? 'bg-zinc-800' : 'bg-zinc-100'} flex items-center justify-center flex-shrink-0`}>
                     <img
                       src={getPublicationLogoUrl(selectedPublication.name)}
                       alt={selectedPublication.displayName}
@@ -511,9 +511,9 @@ const Library: React.FC<LibraryProps> = ({
                       onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                     />
                   </div>
-                  <div>
-                    <h2 className="text-lg font-semibold">{selectedPublication.displayName}</h2>
-                    <p className={`text-sm ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>by {selectedPublication.author}</p>
+                  <div className="min-w-0">
+                    <h2 className="text-base sm:text-lg font-semibold truncate">{selectedPublication.displayName}</h2>
+                    <p className={`text-xs sm:text-sm ${isDark ? 'text-zinc-400' : 'text-zinc-600'} truncate`}>by {selectedPublication.author}</p>
                   </div>
                 </div>
 
@@ -547,7 +547,7 @@ const Library: React.FC<LibraryProps> = ({
               <>
                 {/* My Subscriptions Section */}
                 {userPublications.length > 0 && (
-                  <div className="mb-8">
+                  <div className="mb-6 sm:mb-8">
                     <h2 className={`text-base sm:text-lg font-semibold mb-3 sm:mb-4 ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
                       My Subscriptions
                     </h2>
@@ -629,17 +629,31 @@ const Library: React.FC<LibraryProps> = ({
 
             {/* Add Publication Modal */}
             {showAddModal && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                <div className={`w-full max-w-md rounded-xl p-6 ${isDark ? 'bg-zinc-900 border border-zinc-800' : 'bg-white border border-zinc-200'}`}>
+              <div
+                className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm"
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) {
+                    setShowAddModal(false);
+                    setNewPubUrl('');
+                    setAddPubError(null);
+                  }
+                }}
+              >
+                <div className={`w-full sm:max-w-md rounded-t-xl sm:rounded-xl p-4 sm:p-6 ${isDark ? 'bg-zinc-900 border-t sm:border border-zinc-800' : 'bg-white border-t sm:border border-zinc-200'}`}>
+                  {/* Mobile drag handle */}
+                  <div className="sm:hidden flex justify-center mb-3">
+                    <div className={`w-10 h-1 rounded-full ${isDark ? 'bg-zinc-700' : 'bg-zinc-300'}`}></div>
+                  </div>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold">Add Publication</h3>
+                    <h3 className="text-base sm:text-lg font-semibold">Add Publication</h3>
                     <button
                       onClick={() => {
                         setShowAddModal(false);
                         setNewPubUrl('');
                         setAddPubError(null);
                       }}
-                      className={`p-1 rounded-lg ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100'}`}
+                      className={`p-2 -mr-1 rounded-lg ${isDark ? 'hover:bg-zinc-800 active:bg-zinc-700' : 'hover:bg-zinc-100 active:bg-zinc-200'}`}
+                      style={{ touchAction: 'manipulation' }}
                     >
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -653,17 +667,17 @@ const Library: React.FC<LibraryProps> = ({
                     </div>
                   )}
 
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4 pb-safe">
                     <div>
-                      <label className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                      <label className={`block text-xs sm:text-sm font-medium mb-1.5 ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
                         Publication URL or Name
                       </label>
                       <input
                         type="text"
                         value={newPubUrl}
                         onChange={(e) => setNewPubUrl(e.target.value)}
-                        placeholder="e.g., stratechery or stratechery.substack.com"
-                        className={`w-full py-2.5 px-4 rounded-lg border text-sm ${
+                        placeholder="e.g., stratechery"
+                        className={`w-full py-3 px-4 rounded-lg border text-sm ${
                           isDark
                             ? 'bg-zinc-800 border-zinc-700 text-white placeholder-zinc-500'
                             : 'bg-white border-zinc-300 text-black placeholder-zinc-400'
@@ -672,13 +686,13 @@ const Library: React.FC<LibraryProps> = ({
                     </div>
 
                     <div>
-                      <label className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                      <label className={`block text-xs sm:text-sm font-medium mb-1.5 ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
                         Category
                       </label>
                       <select
                         value={newPubCategory}
                         onChange={(e) => setNewPubCategory(e.target.value as SubstackCategory)}
-                        className={`w-full py-2.5 px-4 rounded-lg border text-sm ${
+                        className={`w-full py-3 px-4 rounded-lg border text-sm ${
                           isDark
                             ? 'bg-zinc-800 border-zinc-700 text-white'
                             : 'bg-white border-zinc-300 text-black'
@@ -695,11 +709,12 @@ const Library: React.FC<LibraryProps> = ({
                     <button
                       onClick={handleAddPublication}
                       disabled={isAddingPub}
-                      className={`w-full py-2.5 px-4 rounded-lg font-medium text-sm transition-colors ${
+                      className={`w-full py-3 px-4 rounded-lg font-medium text-sm transition-colors ${
                         isAddingPub
                           ? 'bg-amber-500/50 text-black/50 cursor-not-allowed'
-                          : 'bg-amber-500 hover:bg-amber-400 text-black'
+                          : 'bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-black'
                       }`}
+                      style={{ touchAction: 'manipulation' }}
                     >
                       {isAddingPub ? (
                         <span className="flex items-center justify-center gap-2">
@@ -898,7 +913,7 @@ const SubstackPublicationCard: React.FC<{
   return (
     <div
       onClick={onSelect}
-      className={`group rounded-lg sm:rounded-xl border overflow-hidden transition-all active:scale-98 cursor-pointer select-none p-4 relative ${
+      className={`group rounded-lg sm:rounded-xl border overflow-hidden transition-all active:scale-98 cursor-pointer select-none p-3 sm:p-4 relative ${
         isDark
           ? 'bg-zinc-900/50 border-zinc-800 hover:border-amber-500/50'
           : 'bg-white border-zinc-200 hover:border-amber-500/50'
@@ -923,8 +938,8 @@ const SubstackPublicationCard: React.FC<{
           </svg>
         </button>
       )}
-      <div className="flex items-start gap-3">
-        <div className={`w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 ${isDark ? 'bg-zinc-800' : 'bg-zinc-100'} flex items-center justify-center`}>
+      <div className="flex items-start gap-2.5 sm:gap-3">
+        <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden flex-shrink-0 ${isDark ? 'bg-zinc-800' : 'bg-zinc-100'} flex items-center justify-center`}>
           {!imgError ? (
             <img
               src={getPublicationLogoUrl(publication.name)}
@@ -934,16 +949,16 @@ const SubstackPublicationCard: React.FC<{
               draggable={false}
             />
           ) : (
-            <svg className={`w-6 h-6 ${isDark ? 'text-zinc-600' : 'text-zinc-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className={`w-5 h-5 sm:w-6 sm:h-6 ${isDark ? 'text-zinc-600' : 'text-zinc-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
             </svg>
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-sm sm:text-base truncate">{publication.displayName}</h3>
-          <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'} mb-1`}>by {publication.author}</p>
+          <h3 className="font-medium text-sm truncate">{publication.displayName}</h3>
+          <p className={`text-[11px] sm:text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'} mb-0.5 sm:mb-1`}>by {publication.author}</p>
           {publication.description && (
-            <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-zinc-600'} line-clamp-2`}>{publication.description}</p>
+            <p className={`text-[11px] sm:text-xs ${isDark ? 'text-zinc-400' : 'text-zinc-600'} line-clamp-2`}>{publication.description}</p>
           )}
         </div>
       </div>
@@ -963,7 +978,7 @@ const SubstackArticleCard: React.FC<{
   return (
     <div
       onClick={() => !isLoading && hasContent && onSelect()}
-      className={`rounded-lg sm:rounded-xl border overflow-hidden transition-all select-none p-4 ${
+      className={`rounded-lg sm:rounded-xl border overflow-hidden transition-all select-none p-3 sm:p-4 ${
         hasContent ? 'cursor-pointer active:scale-98' : 'cursor-not-allowed opacity-60'
       } ${
         isDark
@@ -972,19 +987,19 @@ const SubstackArticleCard: React.FC<{
       }`}
       style={{ touchAction: 'manipulation' }}
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-3 sm:gap-4">
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-sm sm:text-base line-clamp-2 mb-1">{article.title}</h3>
-          <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'} mb-2`}>
+          <h3 className="font-medium text-sm line-clamp-2 mb-1">{article.title}</h3>
+          <p className={`text-[11px] sm:text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'} mb-1.5 sm:mb-2`}>
             {formatPublishedDate(article.publishedAt)}
           </p>
           {article.description && (
-            <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-zinc-600'} line-clamp-2`}>
+            <p className={`text-[11px] sm:text-xs ${isDark ? 'text-zinc-400' : 'text-zinc-600'} line-clamp-2`}>
               {article.description.replace(/<[^>]*>/g, '').substring(0, 150)}...
             </p>
           )}
           {!hasContent && (
-            <p className="text-xs text-amber-500 mt-2">Subscriber-only content</p>
+            <p className="text-[11px] sm:text-xs text-amber-500 mt-1.5 sm:mt-2">Subscriber-only content</p>
           )}
         </div>
         <div className="flex-shrink-0">
@@ -995,7 +1010,7 @@ const SubstackArticleCard: React.FC<{
             </svg>
           ) : hasContent ? (
             <button
-              className="bg-amber-500 text-black font-medium py-2 px-4 rounded-lg text-xs sm:text-sm"
+              className="bg-amber-500 text-black font-medium py-1.5 px-3 sm:py-2 sm:px-4 rounded-lg text-xs sm:text-sm"
             >
               Read
             </button>
