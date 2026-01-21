@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { GutenbergBook, SavedDocument, AppConfig, SubstackPublication, SubstackArticle } from '../types';
-import { getCachedBook, cacheBook, cacheSubstackArticle } from '../lib/storage';
-import { FEATURED_PUBLICATIONS, fetchPublicationFeed, formatPublishedDate, getPublicationLogoUrl } from '../services/substackService';
+import { GutenbergBook, SavedDocument, AppConfig, SubstackPublication, SubstackArticle, SubstackCategory } from '../types';
+import { getCachedBook, cacheBook, cacheSubstackArticle, getUserPublications, addUserPublication, removeUserPublication } from '../lib/storage';
+import { FEATURED_PUBLICATIONS, fetchPublicationFeed, formatPublishedDate, getPublicationLogoUrl, validateAndFetchPublication } from '../services/substackService';
 
 interface LibraryProps {
   onSelectBook: (content: string, title: string, author?: string, gutenbergId?: number) => void;
@@ -57,6 +57,24 @@ const Library: React.FC<LibraryProps> = ({
   const [isLoadingFeed, setIsLoadingFeed] = useState(false);
   const [loadingArticleId, setLoadingArticleId] = useState<string | null>(null);
   const [substackError, setSubstackError] = useState<string | null>(null);
+
+  // Category filter state
+  const [selectedCategory, setSelectedCategory] = useState<SubstackCategory | 'ALL'>('ALL');
+
+  // User publications state
+  const [userPublications, setUserPublications] = useState<SubstackPublication[]>([]);
+
+  // Add publication modal state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newPubUrl, setNewPubUrl] = useState('');
+  const [newPubCategory, setNewPubCategory] = useState<SubstackCategory>(SubstackCategory.OTHER);
+  const [isAddingPub, setIsAddingPub] = useState(false);
+  const [addPubError, setAddPubError] = useState<string | null>(null);
+
+  // Load user publications on mount
+  useEffect(() => {
+    setUserPublications(getUserPublications());
+  }, []);
 
   const isDark = config.theme === 'DARK';
 
@@ -259,6 +277,66 @@ const Library: React.FC<LibraryProps> = ({
     setSubstackArticles([]);
     setSubstackError(null);
   };
+
+  // Add a new user publication
+  const handleAddPublication = async () => {
+    if (!newPubUrl.trim()) {
+      setAddPubError('Please enter a publication URL or name');
+      return;
+    }
+
+    setIsAddingPub(true);
+    setAddPubError(null);
+
+    try {
+      const publication = await validateAndFetchPublication(newPubUrl, newPubCategory);
+      if (!publication) {
+        throw new Error('Could not find publication');
+      }
+
+      // Check if already in featured or user list
+      const allPubs = [...FEATURED_PUBLICATIONS, ...userPublications];
+      if (allPubs.some(p => p.name === publication.name)) {
+        throw new Error('Publication already exists');
+      }
+
+      addUserPublication(publication);
+      setUserPublications(getUserPublications());
+      setShowAddModal(false);
+      setNewPubUrl('');
+      setNewPubCategory(SubstackCategory.OTHER);
+    } catch (err: any) {
+      setAddPubError(err.message || 'Failed to add publication');
+    } finally {
+      setIsAddingPub(false);
+    }
+  };
+
+  // Remove a user publication
+  const handleRemovePublication = (name: string) => {
+    removeUserPublication(name);
+    setUserPublications(getUserPublications());
+  };
+
+  // Get filtered publications based on category
+  const getFilteredPublications = () => {
+    if (selectedCategory === 'ALL') {
+      return FEATURED_PUBLICATIONS;
+    }
+    return FEATURED_PUBLICATIONS.filter(p => p.category === selectedCategory);
+  };
+
+  // Category labels for tabs
+  const categoryTabs: { key: SubstackCategory | 'ALL'; label: string }[] = [
+    { key: 'ALL', label: 'All' },
+    { key: SubstackCategory.TECH, label: 'Tech' },
+    { key: SubstackCategory.BUSINESS, label: 'Business' },
+    { key: SubstackCategory.CULTURE, label: 'Culture' },
+    { key: SubstackCategory.SCIENCE, label: 'Science' },
+    { key: SubstackCategory.POLITICS, label: 'Politics' },
+    { key: SubstackCategory.PERSONAL, label: 'Growth' },
+    { key: SubstackCategory.SPORTS, label: 'Sports' },
+  ];
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-[#0a0a0b] text-[#f5f5f4]' : 'bg-[#faf9f7] text-[#1c1c1c]'}`}>
@@ -467,11 +545,69 @@ const Library: React.FC<LibraryProps> = ({
             ) : (
               // Publications grid view
               <>
-                <h2 className={`text-base sm:text-lg font-semibold mb-3 sm:mb-4 ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
-                  Featured Publications
-                </h2>
+                {/* My Subscriptions Section */}
+                {userPublications.length > 0 && (
+                  <div className="mb-8">
+                    <h2 className={`text-base sm:text-lg font-semibold mb-3 sm:mb-4 ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                      My Subscriptions
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                      {userPublications.map((publication) => (
+                        <SubstackPublicationCard
+                          key={publication.name}
+                          publication={publication}
+                          onSelect={() => handleSelectPublication(publication)}
+                          onRemove={() => handleRemovePublication(publication.name)}
+                          isDark={isDark}
+                          showRemove={true}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Category Tabs */}
+                <div className="mb-4 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+                  <div className="flex gap-2 min-w-max pb-2">
+                    {categoryTabs.map((tab) => (
+                      <button
+                        key={tab.key}
+                        onClick={() => setSelectedCategory(tab.key)}
+                        className={`px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+                          selectedCategory === tab.key
+                            ? 'bg-amber-500 text-black'
+                            : isDark
+                              ? 'bg-zinc-800 text-zinc-400 hover:text-white'
+                              : 'bg-zinc-200 text-zinc-600 hover:text-black'
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                  <h2 className={`text-base sm:text-lg font-semibold ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                    {selectedCategory === 'ALL' ? 'Featured Publications' : selectedCategory}
+                  </h2>
+                  <button
+                    onClick={() => setShowAddModal(true)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
+                      isDark
+                        ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                        : 'bg-zinc-200 text-zinc-700 hover:bg-zinc-300'
+                    }`}
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add
+                  </button>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                  {FEATURED_PUBLICATIONS.map((publication) => (
+                  {getFilteredPublications().map((publication) => (
                     <SubstackPublicationCard
                       key={publication.name}
                       publication={publication}
@@ -489,6 +625,97 @@ const Library: React.FC<LibraryProps> = ({
                   </p>
                 </div>
               </>
+            )}
+
+            {/* Add Publication Modal */}
+            {showAddModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                <div className={`w-full max-w-md rounded-xl p-6 ${isDark ? 'bg-zinc-900 border border-zinc-800' : 'bg-white border border-zinc-200'}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Add Publication</h3>
+                    <button
+                      onClick={() => {
+                        setShowAddModal(false);
+                        setNewPubUrl('');
+                        setAddPubError(null);
+                      }}
+                      className={`p-1 rounded-lg ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100'}`}
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {addPubError && (
+                    <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+                      {addPubError}
+                    </div>
+                  )}
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                        Publication URL or Name
+                      </label>
+                      <input
+                        type="text"
+                        value={newPubUrl}
+                        onChange={(e) => setNewPubUrl(e.target.value)}
+                        placeholder="e.g., stratechery or stratechery.substack.com"
+                        className={`w-full py-2.5 px-4 rounded-lg border text-sm ${
+                          isDark
+                            ? 'bg-zinc-800 border-zinc-700 text-white placeholder-zinc-500'
+                            : 'bg-white border-zinc-300 text-black placeholder-zinc-400'
+                        } focus:outline-none focus:ring-2 focus:ring-amber-500/50`}
+                      />
+                    </div>
+
+                    <div>
+                      <label className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                        Category
+                      </label>
+                      <select
+                        value={newPubCategory}
+                        onChange={(e) => setNewPubCategory(e.target.value as SubstackCategory)}
+                        className={`w-full py-2.5 px-4 rounded-lg border text-sm ${
+                          isDark
+                            ? 'bg-zinc-800 border-zinc-700 text-white'
+                            : 'bg-white border-zinc-300 text-black'
+                        } focus:outline-none focus:ring-2 focus:ring-amber-500/50`}
+                      >
+                        {Object.values(SubstackCategory).map((cat) => (
+                          <option key={cat} value={cat}>
+                            {cat}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <button
+                      onClick={handleAddPublication}
+                      disabled={isAddingPub}
+                      className={`w-full py-2.5 px-4 rounded-lg font-medium text-sm transition-colors ${
+                        isAddingPub
+                          ? 'bg-amber-500/50 text-black/50 cursor-not-allowed'
+                          : 'bg-amber-500 hover:bg-amber-400 text-black'
+                      }`}
+                    >
+                      {isAddingPub ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Validating...
+                        </span>
+                      ) : (
+                        'Add Publication'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
           </>
         )}
@@ -663,19 +890,39 @@ const SubstackPublicationCard: React.FC<{
   publication: SubstackPublication;
   onSelect: () => void;
   isDark: boolean;
-}> = ({ publication, onSelect, isDark }) => {
+  showRemove?: boolean;
+  onRemove?: () => void;
+}> = ({ publication, onSelect, isDark, showRemove, onRemove }) => {
   const [imgError, setImgError] = React.useState(false);
 
   return (
     <div
       onClick={onSelect}
-      className={`group rounded-lg sm:rounded-xl border overflow-hidden transition-all active:scale-98 cursor-pointer select-none p-4 ${
+      className={`group rounded-lg sm:rounded-xl border overflow-hidden transition-all active:scale-98 cursor-pointer select-none p-4 relative ${
         isDark
           ? 'bg-zinc-900/50 border-zinc-800 hover:border-amber-500/50'
           : 'bg-white border-zinc-200 hover:border-amber-500/50'
       }`}
       style={{ touchAction: 'manipulation' }}
     >
+      {showRemove && onRemove && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
+          className={`absolute top-2 right-2 p-1.5 rounded-lg transition-colors z-10 ${
+            isDark
+              ? 'bg-zinc-800 hover:bg-red-500/20 text-zinc-400 hover:text-red-400'
+              : 'bg-zinc-100 hover:bg-red-500/20 text-zinc-500 hover:text-red-500'
+          }`}
+          title="Remove publication"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      )}
       <div className="flex items-start gap-3">
         <div className={`w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 ${isDark ? 'bg-zinc-800' : 'bg-zinc-100'} flex items-center justify-center`}>
           {!imgError ? (

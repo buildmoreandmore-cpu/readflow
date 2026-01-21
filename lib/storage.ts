@@ -1,5 +1,5 @@
 
-import { SavedDocument, ReadingSession } from '../types';
+import { SavedDocument, ReadingSession, SubstackPublication } from '../types';
 
 const DOCUMENTS_KEY = 'flowstate_documents';
 const SESSIONS_KEY = 'flowstate_sessions';
@@ -196,5 +196,41 @@ export const cacheSubstackArticle = (articleId: string, content: string): void =
   } catch {
     // Storage might be full, clear old cache
     localStorage.removeItem(SUBSTACK_CACHE_KEY);
+  }
+};
+
+// User publications storage
+const USER_PUBLICATIONS_KEY = 'flowstate_user_publications';
+
+export const getUserPublications = (): SubstackPublication[] => {
+  try {
+    const data = localStorage.getItem(USER_PUBLICATIONS_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+};
+
+export const addUserPublication = (publication: SubstackPublication): void => {
+  try {
+    const publications = getUserPublications();
+    // Check if already exists
+    const exists = publications.some(p => p.name === publication.name);
+    if (exists) {
+      throw new Error('Publication already added');
+    }
+    publications.unshift({ ...publication, isUserAdded: true });
+    localStorage.setItem(USER_PUBLICATIONS_KEY, JSON.stringify(publications));
+  } catch (err: any) {
+    throw err;
+  }
+};
+
+export const removeUserPublication = (name: string): void => {
+  try {
+    const publications = getUserPublications().filter(p => p.name !== name);
+    localStorage.setItem(USER_PUBLICATIONS_KEY, JSON.stringify(publications));
+  } catch {
+    // Silently fail
   }
 };

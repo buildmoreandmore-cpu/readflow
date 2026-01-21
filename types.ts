@@ -13,6 +13,17 @@ export enum FontType {
   SANS = 'SANS'
 }
 
+export enum SubstackCategory {
+  TECH = 'Tech & Engineering',
+  BUSINESS = 'Business & Finance',
+  CULTURE = 'Culture & Society',
+  SCIENCE = 'Science & Health',
+  POLITICS = 'Politics & Policy',
+  PERSONAL = 'Personal Growth',
+  SPORTS = 'Sports',
+  OTHER = 'Other'
+}
+
 export enum ThemeType {
   DARK = 'DARK',
   LIGHT = 'LIGHT'
@@ -79,6 +90,8 @@ export interface SubstackPublication {
   author: string;         // Author name
   description?: string;
   logoUrl?: string;
+  category: SubstackCategory;
+  isUserAdded?: boolean;  // true if added by user
 }
 
 export interface SubstackArticle {
